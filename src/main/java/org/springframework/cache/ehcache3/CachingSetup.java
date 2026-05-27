@@ -4,9 +4,9 @@ import java.time.Duration;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 
-import javax.cache.CacheManager;
-import javax.cache.configuration.MutableConfiguration;
-import javax.cache.expiry.TouchedExpiryPolicy;
+import jakarta.cache.CacheManager;
+import jakarta.cache.configuration.MutableConfiguration;
+import jakarta.cache.expiry.TouchedExpiryPolicy;
 
 import org.springframework.boot.autoconfigure.cache.JCacheManagerCustomizer;
 import org.springframework.stereotype.Component;
