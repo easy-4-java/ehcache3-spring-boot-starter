@@ -15,7 +15,7 @@
  */
 package org.springframework.cache.ehcache3;
 
-import javax.cache.CacheException;
+import jakarta.cache.CacheException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
