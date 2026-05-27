@@ -4,7 +4,7 @@ package org.springframework.cache.ehcache3;
 import java.io.IOException;
 import java.io.InputStream;
 
-import javax.cache.CacheException;
+import jakarta.cache.CacheException;
 
 import org.ehcache.CacheManager;
 import org.ehcache.config.Configuration;
