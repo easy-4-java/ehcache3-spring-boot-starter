@@ -12,6 +12,7 @@ import org.springframework.boot.autoconfigure.cache.JCacheManagerCustomizer;
 import org.springframework.stereotype.Component;
 
 @Component
+/**\n * Auto-configuration for CachingSetup.\n *\n * @author [@Loong Wan](https://github.com/loong10k)\n * @since 1.0.0\n */
 public class CachingSetup implements JCacheManagerCustomizer {
 	
 	@Override
