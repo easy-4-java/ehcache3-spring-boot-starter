@@ -3,11 +3,11 @@ package org.ehcache.spring.boot;
 
 import org.ehcache.Cache;
 import org.ehcache.CacheManager;
-import org.springframework.boot.autoconfigure.cache.CacheManagerCustomizers;
-import org.springframework.boot.autoconfigure.cache.CacheProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ResourceCondition;
+import org.springframework.boot.cache.autoconfigure.CacheManagerCustomizers;
+import org.springframework.boot.cache.autoconfigure.CacheProperties;
 import org.springframework.cache.ehcache3.EhCache3CacheManager;
 import org.springframework.cache.ehcache3.EhCache3ManagerUtils;
 import org.springframework.context.annotation.Bean;
@@ -20,9 +20,10 @@ import org.springframework.core.io.Resource;
  * EhCache cache configuration. Only kick in if a configuration file location is set or if
  * a default configuration file exists.
  *
- * @author Eddú Meléndez
+ * @author Eddu Melendez
  * @author Stephane Nicoll
  * @since 1.3.0
+ * @author [@Loong Wan](https://github.com/loong10k)
  */
 @Configuration
 @ConditionalOnClass({ Cache.class, EhCache3CacheManager.class })
@@ -49,8 +50,7 @@ public class EhCache3CacheConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public CacheManager ehCacheCacheManager() {
-		Resource location = this.cacheProperties
-				.resolveConfigLocation(this.cacheProperties.getEhcache().getConfig());
+		Resource location = this.cacheProperties.resolveConfigLocation(null);
 		if (location != null) {
 			return EhCache3ManagerUtils.buildCacheManager(location);
 		}

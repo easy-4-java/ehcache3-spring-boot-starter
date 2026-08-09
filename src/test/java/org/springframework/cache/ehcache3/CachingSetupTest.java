@@ -15,24 +15,35 @@
  */
 package org.springframework.cache.ehcache3;
 
+import org.ehcache.CacheManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Unit tests for {{ @link CachingSetup }}.
+ * Unit tests for {@link EhCache3ManagerUtils}.
  *
  * @author [@Loong Wan](https://github.com/loong10k)
  * @since 1.0.0
  */
-@DisplayName("CachingSetup Tests")
+@DisplayName("EhCache3ManagerUtils Tests")
 class CachingSetupTest {
 
     @Test
-    @DisplayName("Instance can be created via constructor")
-    void testInstantiation() {
-        CachingSetup instance = new CachingSetup();
-        assertThat(instance).isNotNull();
+    @DisplayName("buildCacheManager creates a CacheManager")
+    void testBuildCacheManager() {
+        CacheManager cacheManager = EhCache3ManagerUtils.buildCacheManager();
+        assertThat(cacheManager).isNotNull();
+        assertThat(cacheManager.getStatus()).isEqualTo(org.ehcache.Status.AVAILABLE);
+        cacheManager.close();
+    }
+
+    @Test
+    @DisplayName("buildCacheManager with name creates a CacheManager")
+    void testBuildCacheManagerWithName() {
+        CacheManager cacheManager = EhCache3ManagerUtils.buildCacheManager("testManager");
+        assertThat(cacheManager).isNotNull();
+        cacheManager.close();
     }
 }

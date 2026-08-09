@@ -11,13 +11,19 @@ import org.springframework.cache.transaction.AbstractTransactionSupportingCacheM
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
+/**
+ * {@link org.springframework.cache.CacheManager} backed by an EhCache 3
+ * {@link org.ehcache.CacheManager}.
+ *
+ * @author [@Loong Wan](https://github.com/loong10k)
+ */
 public class EhCache3CacheManager extends AbstractTransactionSupportingCacheManager {
 
 	@Nullable
 	private org.ehcache.CacheManager cacheManager;
-	
+
 	/**
-	 * Create a new EhCacheCacheManager, setting the target EhCache CacheManager
+	 * Create a new EhCache3CacheManager, setting the target EhCache CacheManager
 	 * through the {@link #setCacheManager} bean property.
 	 */
 	public EhCache3CacheManager() {
@@ -64,10 +70,13 @@ public class EhCache3CacheManager extends AbstractTransactionSupportingCacheMana
 			throw new IllegalStateException("An 'alive' EhCache CacheManager is required - current cache is " + status.toString());
 		}
 
-		Set<String> names = getCacheManager().getRuntimeConfiguration().getCacheConfigurations().keySet();
+		Set<String> names = cacheManager.getRuntimeConfiguration().getCacheConfigurations().keySet();
 		Collection<Cache> caches = new LinkedHashSet<>(names.size());
 		for (String name : names) {
-			caches.add(new EhCache3Cache((UserManagedCache<String, Object>) getCacheManager().getCache(name, String.class, Object.class)));
+			UserManagedCache<String, Object> cache = (UserManagedCache<String, Object>) cacheManager.getCache(name, String.class, Object.class);
+			if (cache != null) {
+				caches.add(new EhCache3Cache(cache, name));
+			}
 		}
 		return caches;
 	}
@@ -76,15 +85,13 @@ public class EhCache3CacheManager extends AbstractTransactionSupportingCacheMana
 	protected Cache getMissingCache(String name) {
 		org.ehcache.CacheManager cacheManager = getCacheManager();
 		Assert.state(cacheManager != null, "No CacheManager set");
-		
+
 		// Check the EhCache cache again (in case the cache was added at runtime)
 		org.ehcache.Cache<String, Object> ehcache = cacheManager.getCache(name, String.class, Object.class);
 		if (ehcache != null) {
-			return new EhCache3Cache((UserManagedCache<String, Object>) ehcache);
+			return new EhCache3Cache((UserManagedCache<String, Object>) ehcache, name);
 		}
 		return null;
 	}
-	
-	 
 
 }

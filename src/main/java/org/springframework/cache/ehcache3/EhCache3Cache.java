@@ -15,78 +15,73 @@
  */
 package org.springframework.cache.ehcache3;
 
+import java.util.Collections;
 import java.util.concurrent.Callable;
 
 import org.ehcache.Status;
 import org.ehcache.UserManagedCache;
-import org.ehcache.core.Ehcache;
 import org.springframework.cache.Cache;
 import org.springframework.cache.Cache.ValueRetrievalException;
 import org.springframework.cache.Cache.ValueWrapper;
-import org.springframework.cache.ehcache.EhCacheCache;
 import org.springframework.cache.support.SimpleValueWrapper;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
+/**
+ * Spring {@link Cache} adapter implementation backed by an EhCache 3
+ * {@link UserManagedCache}.
+ *
+ * @author [@Loong Wan](https://github.com/loong10k)
+ */
 public class EhCache3Cache implements Cache {
 
 	private final UserManagedCache<String, Object> cache;
+	private final String name;
 
 
 	/**
-	 * Create an {@link EhCacheCache} instance.
+	 * Create an {@link EhCache3Cache} instance.
 	 * @param ehcache backing Ehcache instance
+	 * @param name the cache name
 	 */
-	public EhCache3Cache(UserManagedCache<String, Object> ehcache) {
+	public EhCache3Cache(UserManagedCache<String, Object> ehcache, String name) {
 		Assert.notNull(ehcache, "Ehcache must not be null");
 		Status status = ehcache.getStatus();
 		Assert.isTrue(Status.AVAILABLE.equals(status),
 				"An 'alive' Ehcache is required - current cache is " + status.toString());
 		this.cache = ehcache;
+		this.name = name;
 	}
 
 
 	@Override
 	public final String getName() {
-		return this.cache.getName();
+		return this.name;
 	}
 
 	@Override
-	public final Ehcache getNativeCache() {
+	public final UserManagedCache<String, Object> getNativeCache() {
 		return this.cache;
 	}
 
 	@Override
 	@Nullable
 	public ValueWrapper get(Object key) {
-		Element element = lookup(key);
-		return toValueWrapper(element);
+		Object value = this.cache.get(key.toString());
+		return toValueWrapper(value);
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	@Nullable
 	public <T> T get(Object key, Callable<T> valueLoader) {
-		Element element = lookup(key);
-		if (element != null) {
-			return (T) element.getObjectValue();
+		Object value = this.cache.get(key.toString());
+		if (value != null) {
+			return (T) value;
 		}
 		else {
-			this.cache.acquireWriteLockOnKey(key);
-			try {
-				element = lookup(key); // One more attempt with the write lock
-				if (element != null) {
-					return (T) element.getObjectValue();
-				}
-				else {
-					return loadValue(key, valueLoader);
-				}
-			}
-			finally {
-				this.cache.releaseWriteLockOnKey(key);
-			}
+			return loadValue(key, valueLoader);
 		}
-
 	}
 
 	private <T> T loadValue(Object key, Callable<T> valueLoader) {
@@ -105,8 +100,7 @@ public class EhCache3Cache implements Cache {
 	@SuppressWarnings("unchecked")
 	@Nullable
 	public <T> T get(Object key, @Nullable Class<T> type) {
-		Element element = this.cache.get(key);
-		Object value = (element != null ? element.getObjectValue() : null);
+		Object value = this.cache.get(key.toString());
 		if (value != null && type != null && !type.isInstance(value)) {
 			throw new IllegalStateException("Cached value is not of required type [" + type.getName() + "]: " + value);
 		}
@@ -115,35 +109,30 @@ public class EhCache3Cache implements Cache {
 
 	@Override
 	public void put(Object key, @Nullable Object value) {
-		this.cache.put(new Element(key, value));
+		this.cache.put(key.toString(), value);
 	}
 
 	@Override
 	@Nullable
 	public ValueWrapper putIfAbsent(Object key, @Nullable Object value) {
-		Element existingElement = this.cache.putIfAbsent(new Element(key, value));
-		return toValueWrapper(existingElement);
+		Object existing = this.cache.putIfAbsent(key.toString(), value);
+		return toValueWrapper(existing);
 	}
 
 	@Override
 	public void evict(Object key) {
-		this.cache.remove(key);
+		this.cache.remove(key.toString());
 	}
 
 	@Override
 	public void clear() {
-		this.cache.removeAll();
+		this.cache.clear();
 	}
 
 
 	@Nullable
-	private Element lookup(Object key) {
-		return this.cache.get(key);
-	}
-
-	@Nullable
-	private ValueWrapper toValueWrapper(@Nullable Element element) {
-		return (element != null ? new SimpleValueWrapper(element.getObjectValue()) : null);
+	private ValueWrapper toValueWrapper(@Nullable Object value) {
+		return (value != null ? new SimpleValueWrapper(value) : null);
 	}
 
 }

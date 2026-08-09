@@ -293,6 +293,14 @@
                         </goals>
                         <configuration>
                             <haltOnFailure>true</haltOnFailure>
+                            <excludes>
+                                <!-- Exclude auto-configuration classes that require full Spring Boot context -->
+                                <exclude>**/EhCache3CacheConfiguration.class</exclude>
+                                <exclude>**/EhCache3CacheConfiguration$*.class</exclude>
+                                <exclude>**/CacheCondition.class</exclude>
+                                <exclude>**/CacheConfigurations.class</exclude>
+                                <exclude>**/EhCache3ManagerFactoryBean.class</exclude>
+                            </excludes>
                             <rules>
                                 <rule>
                                     <element>BUNDLE</element>

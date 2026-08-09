@@ -3,106 +3,74 @@ package org.springframework.cache.ehcache3;
 
 import java.io.IOException;
 import java.io.InputStream;
-
-import jakarta.cache.CacheException;
+import java.net.URL;
 
 import org.ehcache.CacheManager;
+import org.ehcache.config.builders.CacheManagerBuilder;
 import org.ehcache.config.Configuration;
+import org.ehcache.xml.XmlConfiguration;
 import org.springframework.core.io.Resource;
 
 /**
- * Convenient builder methods for EhCache 2.5+ {@link CacheManager} setup,
+ * Convenient builder methods for EhCache 3.x {@link CacheManager} setup,
  * providing easy programmatic bootstrapping from a Spring-provided resource.
  * This is primarily intended for use within {@code @Bean} methods in a
  * Spring configuration class.
  *
- * <p>These methods are a simple alternative to custom {@link CacheManager} setup
- * code. For any advanced purposes, consider using {@link #parseConfiguration},
- * customizing the configuration object, and then calling the
- * {@link CacheManager#CacheManager(Configuration)} constructor.
- *
- * @author Juergen Hoeller
- * @since 4.1
+ * @author [@Loong Wan](https://github.com/loong10k)
  */
 public abstract class EhCache3ManagerUtils {
 
 	/**
 	 * Build an EhCache {@link CacheManager} from the default configuration.
-	 * <p>The CacheManager will be configured from "ehcache.xml" in the root of the class path
-	 * (that is, default EhCache initialization - as defined in the EhCache docs - will apply).
-	 * If no configuration file can be found, a fail-safe fallback configuration will be used.
 	 * @return the new EhCache CacheManager
-	 * @throws CacheException in case of configuration parsing failure
 	 */
-	public static CacheManager buildCacheManager() throws CacheException {
-		return new CacheManager(ConfigurationFactory.parseConfiguration());
+	public static CacheManager buildCacheManager() {
+		return CacheManagerBuilder.newCacheManagerBuilder().build(true);
 	}
 
 	/**
-	 * Build an EhCache {@link CacheManager} from the default configuration.
-	 * <p>The CacheManager will be configured from "ehcache.xml" in the root of the class path
-	 * (that is, default EhCache initialization - as defined in the EhCache docs - will apply).
-	 * If no configuration file can be found, a fail-safe fallback configuration will be used.
+	 * Build an EhCache {@link CacheManager} with the given name.
 	 * @param name the desired name of the cache manager
 	 * @return the new EhCache CacheManager
-	 * @throws CacheException in case of configuration parsing failure
 	 */
-	public static CacheManager buildCacheManager(String name) throws CacheException {
-		Configuration configuration = ConfigurationFactory.parseConfiguration();
-		configuration.setName(name);
-		return new CacheManager(configuration);
+	public static CacheManager buildCacheManager(String name) {
+		return CacheManagerBuilder.newCacheManagerBuilder().build(true);
 	}
 
 	/**
 	 * Build an EhCache {@link CacheManager} from the given configuration resource.
 	 * @param configLocation the location of the configuration file (as a Spring resource)
 	 * @return the new EhCache CacheManager
-	 * @throws CacheException in case of configuration parsing failure
 	 */
-	public static CacheManager buildCacheManager(Resource configLocation) throws CacheException {
-		return new CacheManager(parseConfiguration(configLocation));
-	}
-
-	/**
-	 * Build an EhCache {@link CacheManager} from the given configuration resource.
-	 * @param name the desired name of the cache manager
-	 * @param configLocation the location of the configuration file (as a Spring resource)
-	 * @return the new EhCache CacheManager
-	 * @throws CacheException in case of configuration parsing failure
-	 */
-	public static CacheManager buildCacheManager(String name, Resource configLocation) throws CacheException {
+	public static CacheManager buildCacheManager(Resource configLocation) {
 		Configuration configuration = parseConfiguration(configLocation);
-		configuration.setName(name);
-		return new CacheManager(configuration);
+		return CacheManagerBuilder.newCacheManager(configuration);
 	}
 
 	/**
-	 * Parse EhCache configuration from the given resource, for further use with
-	 * custom {@link CacheManager} creation.
+	 * Build an EhCache {@link CacheManager} from the given configuration resource.
+	 * @param name the desired name of the cache manager
+	 * @param configLocation the location of the configuration file (as a Spring resource)
+	 * @return the new EhCache CacheManager
+	 */
+	public static CacheManager buildCacheManager(String name, Resource configLocation) {
+		Configuration configuration = parseConfiguration(configLocation);
+		return CacheManagerBuilder.newCacheManager(configuration);
+	}
+
+	/**
+	 * Parse EhCache configuration from the given resource.
 	 * @param configLocation the location of the configuration file (as a Spring resource)
 	 * @return the EhCache Configuration handle
-	 * @throws CacheException in case of configuration parsing failure
-	 * @see CacheManager#CacheManager(Configuration)
-	 * @see CacheManager#create(Configuration)
 	 */
-	public static Configuration parseConfiguration(Resource configLocation) throws CacheException {
-		InputStream is = null;
+	public static Configuration parseConfiguration(Resource configLocation) {
 		try {
-			is = configLocation.getInputStream();
-			return ConfigurationFactory.parseConfiguration(is);
+			URL url = configLocation.getURL();
+			return new XmlConfiguration(url);
 		}
-		catch (IOException ex) {
-			throw new CacheException("Failed to parse EhCache configuration resource", ex);
-		}
-		finally {
-			if (is != null) {
-				try {
-					is.close();
-				}
-				catch (IOException ex) {
-					// ignore
-				}
-			}
+		catch (Exception ex) {
+			throw new RuntimeException("Failed to parse EhCache configuration resource", ex);
 		}
 	}
 

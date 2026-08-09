@@ -17,11 +17,13 @@ package org.ehcache.spring.boot;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.cache.autoconfigure.CacheManagerCustomizers;
+import org.springframework.boot.cache.autoconfigure.CacheProperties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Unit tests for {{ @link EhCache3CacheConfiguration }}.
+ * Unit tests for {@link EhCache3CacheConfiguration}.
  *
  * @author [@Loong Wan](https://github.com/loong10k)
  * @since 1.0.0
@@ -32,7 +34,9 @@ class EhCache3CacheConfigurationTest {
     @Test
     @DisplayName("Instance can be created via constructor")
     void testInstantiation() {
-        EhCache3CacheConfiguration instance = new EhCache3CacheConfiguration();
+        CacheProperties cacheProperties = new CacheProperties();
+        CacheManagerCustomizers customizers = new CacheManagerCustomizers(null);
+        EhCache3CacheConfiguration instance = new EhCache3CacheConfiguration(cacheProperties, customizers);
         assertThat(instance).isNotNull();
     }
 }

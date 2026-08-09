@@ -27,38 +27,30 @@ import org.springframework.util.Assert;
  * Mappings between {@link CacheType} and {@code @Configuration}.
  *
  * @author Phillip Webb
- * @author Edd煤 Mel茅ndez
+ * @author Eddu Melendez
+ * @author [@Loong Wan](https://github.com/loong10k)
  */
 final class CacheConfigurations {
 
-	private static final Map<CacheType, Class<?>> MAPPINGS;
+	private static final Map<String, Class<?>> MAPPINGS;
 
 	static {
-		Map<CacheType, Class<?>> mappings = new HashMap<CacheType, Class<?>>();
-		mappings.put(CacheType.GENERIC, GenericCacheConfiguration.class);
-		mappings.put(CacheType.EHCACHE, EhCacheCacheConfiguration.class);
-		mappings.put(CacheType.HAZELCAST, HazelcastCacheConfiguration.class);
-		mappings.put(CacheType.INFINISPAN, InfinispanCacheConfiguration.class);
-		mappings.put(CacheType.JCACHE, JCacheCacheConfiguration.class);
-		mappings.put(CacheType.COUCHBASE, CouchbaseCacheConfiguration.class);
-		mappings.put(CacheType.REDIS, RedisCacheConfiguration.class);
-		mappings.put(CacheType.CAFFEINE, CaffeineCacheConfiguration.class);
-		mappings.put(CacheType.SIMPLE, SimpleCacheConfiguration.class);
-		mappings.put(CacheType.NONE, NoOpCacheConfiguration.class);
+		Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
+		mappings.put("ehcache3", EhCache3CacheConfiguration.class);
 		MAPPINGS = Collections.unmodifiableMap(mappings);
 	}
 
 	private CacheConfigurations() {
 	}
 
-	public static String getConfigurationClass(CacheType cacheType) {
+	public static String getConfigurationClass(String cacheType) {
 		Class<?> configurationClass = MAPPINGS.get(cacheType);
 		Assert.state(configurationClass != null, "Unknown cache type " + cacheType);
 		return configurationClass.getName();
 	}
 
-	public static CacheType getType(String configurationClassName) {
-		for (Map.Entry<CacheType, Class<?>> entry : MAPPINGS.entrySet()) {
+	public static String getType(String configurationClassName) {
+		for (Map.Entry<String, Class<?>> entry : MAPPINGS.entrySet()) {
 			if (entry.getValue().getName().equals(configurationClassName)) {
 				return entry.getKey();
 			}

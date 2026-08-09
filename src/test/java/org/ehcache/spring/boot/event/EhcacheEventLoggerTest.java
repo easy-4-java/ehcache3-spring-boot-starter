@@ -15,13 +15,17 @@
  */
 package org.ehcache.spring.boot.event;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import org.ehcache.event.CacheEvent;
+import org.ehcache.event.EventType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 /**
- * Unit tests for {{ @link EhcacheEventLogger }}.
+ * Unit tests for {@link EhcacheEventLogger}.
  *
  * @author [@Loong Wan](https://github.com/loong10k)
  * @since 1.0.0
@@ -34,5 +38,76 @@ class EhcacheEventLoggerTest {
     void testInstantiation() {
         EhcacheEventLogger instance = new EhcacheEventLogger();
         assertThat(instance).isNotNull();
+    }
+
+    @Test
+    @DisplayName("onEvent logs the event")
+    void onEvent() {
+        EhcacheEventLogger logger = new EhcacheEventLogger();
+
+        CacheEvent<String, String> event = mock(CacheEvent.class);
+        when(event.getType()).thenReturn(EventType.CREATED);
+        when(event.getKey()).thenReturn("key1");
+        when(event.getOldValue()).thenReturn(null);
+        when(event.getNewValue()).thenReturn("value1");
+
+        // Should not throw
+        logger.onEvent(event);
+    }
+
+    @Test
+    @DisplayName("onEvent handles UPDATED event")
+    void onEventUpdated() {
+        EhcacheEventLogger logger = new EhcacheEventLogger();
+
+        CacheEvent<String, String> event = mock(CacheEvent.class);
+        when(event.getType()).thenReturn(EventType.UPDATED);
+        when(event.getKey()).thenReturn("key1");
+        when(event.getOldValue()).thenReturn("oldValue");
+        when(event.getNewValue()).thenReturn("newValue");
+
+        logger.onEvent(event);
+    }
+
+    @Test
+    @DisplayName("onEvent handles REMOVED event")
+    void onEventRemoved() {
+        EhcacheEventLogger logger = new EhcacheEventLogger();
+
+        CacheEvent<String, String> event = mock(CacheEvent.class);
+        when(event.getType()).thenReturn(EventType.REMOVED);
+        when(event.getKey()).thenReturn("key1");
+        when(event.getOldValue()).thenReturn("value1");
+        when(event.getNewValue()).thenReturn(null);
+
+        logger.onEvent(event);
+    }
+
+    @Test
+    @DisplayName("onEvent handles EVICTED event")
+    void onEventEvicted() {
+        EhcacheEventLogger logger = new EhcacheEventLogger();
+
+        CacheEvent<String, String> event = mock(CacheEvent.class);
+        when(event.getType()).thenReturn(EventType.EVICTED);
+        when(event.getKey()).thenReturn("key1");
+        when(event.getOldValue()).thenReturn("value1");
+        when(event.getNewValue()).thenReturn(null);
+
+        logger.onEvent(event);
+    }
+
+    @Test
+    @DisplayName("onEvent handles EXPIRED event")
+    void onEventExpired() {
+        EhcacheEventLogger logger = new EhcacheEventLogger();
+
+        CacheEvent<String, String> event = mock(CacheEvent.class);
+        when(event.getType()).thenReturn(EventType.EXPIRED);
+        when(event.getKey()).thenReturn("key1");
+        when(event.getOldValue()).thenReturn("value1");
+        when(event.getNewValue()).thenReturn(null);
+
+        logger.onEvent(event);
     }
 }
