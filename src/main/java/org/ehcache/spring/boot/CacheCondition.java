@@ -15,7 +15,7 @@ import org.springframework.core.env.PropertyResolver;
  * @author Stephane Nicoll
  * @author Phillip Webb
  * @since 1.3.0
- * @author [@Loong Wan](https://github.com/loong10k)
+ * @author <a href="https://github.com/loong10k">Loong Wan</a>
  */
 public class CacheCondition extends SpringBootCondition {
 

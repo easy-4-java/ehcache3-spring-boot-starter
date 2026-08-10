@@ -17,7 +17,7 @@ import org.springframework.core.io.Resource;
  * This is primarily intended for use within {@code @Bean} methods in a
  * Spring configuration class.
  *
- * @author [@Loong Wan](https://github.com/loong10k)
+ * @author <a href="https://github.com/loong10k">Loong Wan</a>
  */
 public abstract class EhCache3ManagerUtils {
 

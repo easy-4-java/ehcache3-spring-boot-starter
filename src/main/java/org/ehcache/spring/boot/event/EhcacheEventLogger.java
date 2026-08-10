@@ -5,7 +5,7 @@ import org.ehcache.event.CacheEventListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**\n * Auto-configuration for EhcacheEventLogger.\n *\n * @author [@Loong Wan](https://github.com/loong10k)\n * @since 1.0.0\n */
+/**\n * Auto-configuration for EhcacheEventLogger.\n *\n * @author <a href="https://github.com/loong10k">Loong Wan</a>\n * @since 1.0.0\n */
 public class EhcacheEventLogger implements CacheEventListener<Object, Object> {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(EhcacheEventLogger.class);

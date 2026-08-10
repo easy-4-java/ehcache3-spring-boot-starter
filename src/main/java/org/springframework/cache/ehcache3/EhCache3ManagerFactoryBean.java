@@ -29,7 +29,7 @@ import org.springframework.lang.Nullable;
  * {@link FactoryBean} that exposes an EhCache 3 {@link CacheManager}
  * instance, configured from a specified config location.
  *
- * @author [@Loong Wan](https://github.com/loong10k)
+ * @author <a href="https://github.com/loong10k">Loong Wan</a>
  * @see #setConfigLocation
  */
 public class EhCache3ManagerFactoryBean implements FactoryBean<CacheManager>, InitializingBean, DisposableBean {

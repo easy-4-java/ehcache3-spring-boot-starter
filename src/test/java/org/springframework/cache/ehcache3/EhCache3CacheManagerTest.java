@@ -17,7 +17,7 @@ import org.springframework.cache.Cache;
 /**
  * Tests for {@link EhCache3CacheManager}.
  *
- * @author [@Loong Wan](https://github.com/loong10k)
+ * @author <a href="https://github.com/loong10k">Loong Wan</a>
  */
 class EhCache3CacheManagerTest {
 

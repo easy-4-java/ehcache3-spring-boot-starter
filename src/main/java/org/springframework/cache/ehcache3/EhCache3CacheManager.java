@@ -15,7 +15,7 @@ import org.springframework.util.Assert;
  * {@link org.springframework.cache.CacheManager} backed by an EhCache 3
  * {@link org.ehcache.CacheManager}.
  *
- * @author [@Loong Wan](https://github.com/loong10k)
+ * @author <a href="https://github.com/loong10k">Loong Wan</a>
  */
 public class EhCache3CacheManager extends AbstractTransactionSupportingCacheManager {
 

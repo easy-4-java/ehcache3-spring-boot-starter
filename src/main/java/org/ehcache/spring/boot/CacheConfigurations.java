@@ -28,7 +28,7 @@ import org.springframework.util.Assert;
  *
  * @author Phillip Webb
  * @author Eddu Melendez
- * @author [@Loong Wan](https://github.com/loong10k)
+ * @author <a href="https://github.com/loong10k">Loong Wan</a>
  */
 final class CacheConfigurations {
 

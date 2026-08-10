@@ -19,7 +19,7 @@ import org.springframework.core.io.Resource;
 /**
  * Tests for {@link EhCache3ManagerUtils}.
  *
- * @author [@Loong Wan](https://github.com/loong10k)
+ * @author <a href="https://github.com/loong10k">Loong Wan</a>
  */
 class EhCache3ManagerUtilsTest {
 

@@ -31,7 +31,7 @@ import org.springframework.util.Assert;
  * Spring {@link Cache} adapter implementation backed by an EhCache 3
  * {@link UserManagedCache}.
  *
- * @author [@Loong Wan](https://github.com/loong10k)
+ * @author <a href="https://github.com/loong10k">Loong Wan</a>
  */
 public class EhCache3Cache implements Cache {
 

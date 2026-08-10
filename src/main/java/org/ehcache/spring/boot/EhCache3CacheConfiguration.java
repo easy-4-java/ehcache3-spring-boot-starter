@@ -23,7 +23,7 @@ import org.springframework.core.io.Resource;
  * @author Eddu Melendez
  * @author Stephane Nicoll
  * @since 1.3.0
- * @author [@Loong Wan](https://github.com/loong10k)
+ * @author <a href="https://github.com/loong10k">Loong Wan</a>
  */
 @Configuration
 @ConditionalOnClass({ Cache.class, EhCache3CacheManager.class })
