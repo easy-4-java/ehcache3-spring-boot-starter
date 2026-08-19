@@ -76,6 +76,9 @@ public class EhCache3ManagerFactoryBean implements FactoryBean<CacheManager>, In
 
 
 	@Override
+	/**
+	 * <p>After properties set.</p>
+	 */
 	public void afterPropertiesSet() {
 		if (logger.isInfoEnabled()) {
 			logger.info("Initializing EhCache CacheManager" +
@@ -94,21 +97,27 @@ public class EhCache3ManagerFactoryBean implements FactoryBean<CacheManager>, In
 
 	@Override
 	@Nullable
+	/** @return return the object. */
 	public CacheManager getObject() {
 		return this.cacheManager;
 	}
 
 	@Override
+	/** @return return the object type. */
 	public Class<? extends CacheManager> getObjectType() {
 		return (this.cacheManager != null ? this.cacheManager.getClass() : CacheManager.class);
 	}
 
 	@Override
+	/** @return return whether singleton is enabled. */
 	public boolean isSingleton() {
 		return true;
 	}
 
 	@Override
+	/**
+	 * <p>Destroy.</p>
+	 */
 	public void destroy() {
 		if (this.cacheManager != null && this.locallyManaged) {
 			if (logger.isInfoEnabled()) {

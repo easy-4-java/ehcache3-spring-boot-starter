@@ -43,12 +43,14 @@ final class CacheConfigurations {
 	private CacheConfigurations() {
 	}
 
+	/** @return return the configuration class. */
 	public static String getConfigurationClass(String cacheType) {
 		Class<?> configurationClass = MAPPINGS.get(cacheType);
 		Assert.state(configurationClass != null, "Unknown cache type " + cacheType);
 		return configurationClass.getName();
 	}
 
+	/** @return return the type. */
 	public static String getType(String configurationClassName) {
 		for (Map.Entry<String, Class<?>> entry : MAPPINGS.entrySet()) {
 			if (entry.getValue().getName().equals(configurationClassName)) {

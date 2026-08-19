@@ -30,6 +30,11 @@ import org.springframework.core.io.Resource;
 @ConditionalOnMissingBean(org.springframework.cache.CacheManager.class)
 @Conditional({ CacheCondition.class,
 	EhCache3CacheConfiguration.ConfigAvailableCondition.class })
+/**
+ * <p>Auto-configuration for EhCache3CacheConfiguration.</p>
+ * @author <a href="https://github.com/loong10k">Loong Wan</a>
+ * @since 1.0.0
+ */
 public class EhCache3CacheConfiguration {
 
 	private final CacheProperties cacheProperties;
@@ -43,12 +48,21 @@ public class EhCache3CacheConfiguration {
 	}
 
 	@Bean
+	/**
+	 * <p>Cache manager.</p>
+	 * @param ehCacheCacheManager
+	 * @return the result
+	 */
 	public EhCache3CacheManager cacheManager(CacheManager ehCacheCacheManager) {
 		return this.customizers.customize(new EhCache3CacheManager(ehCacheCacheManager));
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
+	/**
+	 * <p>Eh cache cache manager.</p>
+	 * @return the result
+	 */
 	public CacheManager ehCacheCacheManager() {
 		Resource location = this.cacheProperties.resolveConfigLocation(null);
 		if (location != null) {

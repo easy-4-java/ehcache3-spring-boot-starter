@@ -55,17 +55,24 @@ public class EhCache3Cache implements Cache {
 
 
 	@Override
+	/** @return return the name. */
 	public final String getName() {
 		return this.name;
 	}
 
 	@Override
+	/** @return return the native cache. */
 	public final UserManagedCache<String, Object> getNativeCache() {
 		return this.cache;
 	}
 
 	@Override
 	@Nullable
+	/**
+	 * <p>Get.</p>
+	 * @param key
+	 * @return the result
+	 */
 	public ValueWrapper get(Object key) {
 		Object value = this.cache.get(key.toString());
 		return toValueWrapper(value);
@@ -74,6 +81,12 @@ public class EhCache3Cache implements Cache {
 	@SuppressWarnings("unchecked")
 	@Override
 	@Nullable
+	/**
+	 * <p>Get.</p>
+	 * @param key
+	 * @param valueLoader
+	 * @return the result
+	 */
 	public <T> T get(Object key, Callable<T> valueLoader) {
 		Object value = this.cache.get(key.toString());
 		if (value != null) {
@@ -84,6 +97,12 @@ public class EhCache3Cache implements Cache {
 		}
 	}
 
+	/**
+	 * <p>Load value.</p>
+	 * @param key
+	 * @param valueLoader
+	 * @return the result
+	 */
 	private <T> T loadValue(Object key, Callable<T> valueLoader) {
 		T value;
 		try {
@@ -99,6 +118,12 @@ public class EhCache3Cache implements Cache {
 	@Override
 	@SuppressWarnings("unchecked")
 	@Nullable
+	/**
+	 * <p>Get.</p>
+	 * @param key
+	 * @param type
+	 * @return the result
+	 */
 	public <T> T get(Object key, @Nullable Class<T> type) {
 		Object value = this.cache.get(key.toString());
 		if (value != null && type != null && !type.isInstance(value)) {
@@ -108,29 +133,52 @@ public class EhCache3Cache implements Cache {
 	}
 
 	@Override
+	/**
+	 * <p>Put.</p>
+	 * @param key
+	 * @param value
+	 */
 	public void put(Object key, @Nullable Object value) {
 		this.cache.put(key.toString(), value);
 	}
 
 	@Override
 	@Nullable
+	/**
+	 * <p>Put if absent.</p>
+	 * @param key
+	 * @param value
+	 * @return the result
+	 */
 	public ValueWrapper putIfAbsent(Object key, @Nullable Object value) {
 		Object existing = this.cache.putIfAbsent(key.toString(), value);
 		return toValueWrapper(existing);
 	}
 
 	@Override
+	/**
+	 * <p>Evict.</p>
+	 * @param key
+	 */
 	public void evict(Object key) {
 		this.cache.remove(key.toString());
 	}
 
 	@Override
+	/**
+	 * <p>Clear.</p>
+	 */
 	public void clear() {
 		this.cache.clear();
 	}
 
 
 	@Nullable
+	/**
+	 * <p>To value wrapper.</p>
+	 * @param value
+	 * @return the result
+	 */
 	private ValueWrapper toValueWrapper(@Nullable Object value) {
 		return (value != null ? new SimpleValueWrapper(value) : null);
 	}

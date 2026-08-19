@@ -54,6 +54,9 @@ public class EhCache3CacheManager extends AbstractTransactionSupportingCacheMana
 	}
 
 	@Override
+	/**
+	 * <p>After properties set.</p>
+	 */
 	public void afterPropertiesSet() {
 		if (getCacheManager() == null) {
 			setCacheManager(EhCache3ManagerUtils.buildCacheManager());
@@ -61,6 +64,10 @@ public class EhCache3CacheManager extends AbstractTransactionSupportingCacheMana
 	}
 
 	@Override
+	/**
+	 * <p>Load caches.</p>
+	 * @return the result
+	 */
 	protected Collection<Cache> loadCaches() {
 		org.ehcache.CacheManager cacheManager = getCacheManager();
 		Assert.state(cacheManager != null, "No CacheManager set");
@@ -82,6 +89,7 @@ public class EhCache3CacheManager extends AbstractTransactionSupportingCacheMana
 	}
 
 	@Override
+	/** @return return the missing cache. */
 	protected Cache getMissingCache(String name) {
 		org.ehcache.CacheManager cacheManager = getCacheManager();
 		Assert.state(cacheManager != null, "No CacheManager set");
