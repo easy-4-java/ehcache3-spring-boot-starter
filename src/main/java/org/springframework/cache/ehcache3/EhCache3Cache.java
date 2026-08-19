@@ -32,6 +32,7 @@ import org.springframework.util.Assert;
  * {@link UserManagedCache}.
  *
  * @author <a href="https://github.com/loong10k">Loong Wan</a>
+ * @since 1.0.0
  */
 public class EhCache3Cache implements Cache {
 

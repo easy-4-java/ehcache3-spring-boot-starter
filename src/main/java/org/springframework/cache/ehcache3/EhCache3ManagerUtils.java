@@ -18,6 +18,7 @@ import org.springframework.core.io.Resource;
  * Spring configuration class.
  *
  * @author <a href="https://github.com/loong10k">Loong Wan</a>
+ * @since 1.0.0
  */
 public abstract class EhCache3ManagerUtils {
 

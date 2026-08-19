@@ -19,6 +19,7 @@ import org.springframework.core.env.PropertyResolver;
  */
 public class CacheCondition extends SpringBootCondition {
 
+	/** Getter for match outcome */
 	@Override
 	public ConditionOutcome getMatchOutcome(ConditionContext context,
 			AnnotatedTypeMetadata metadata) {

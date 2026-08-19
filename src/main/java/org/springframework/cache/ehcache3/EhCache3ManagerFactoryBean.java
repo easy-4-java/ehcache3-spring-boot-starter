@@ -31,6 +31,7 @@ import org.springframework.lang.Nullable;
  *
  * @author <a href="https://github.com/loong10k">Loong Wan</a>
  * @see #setConfigLocation
+ * @since 1.0.0
  */
 public class EhCache3ManagerFactoryBean implements FactoryBean<CacheManager>, InitializingBean, DisposableBean {
 
