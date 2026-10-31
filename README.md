@@ -7,7 +7,7 @@
 **Spring Boot Starter for ehcache3**
 
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.easy4j/ehcache3-spring-boot-starter)](https://github.com/easy-4-java/ehcache3-spring-boot-starter)
-[![Java](https://img.shields.io/badge/Java-17-orange)](#3-requirements-and-compatibility)
+[![Java](https://img.shields.io/badge/Java-8-orange)](#3-requirements-and-compatibility)
 [![License](https://img.shields.io/badge/license-Apache-2.0-green)](https://www.apache.org/licenses/LICENSE-2.0)
 
 [简体中文](./README.zh-CN.md) | [English](./README.md)
@@ -22,12 +22,37 @@
 ---
 
 > **Current Version**：`1.0.0-SNAPSHOT`<br>
-> **JDK Baseline**：`17`<br>
-> **Group ID**：`io.github.easy4j`<br>
+> **JDK Baseline**：`8`<br>
+> **Group ID**：`io.github.hiwepy`<br>
 > **Artifact ID**：`ehcache3-spring-boot-starter`<br>
 > **License**：Apache License 2.0<br>
 
 ## 1. Positioning
+
+### Master branch compatibility notes
+
+This branch targets Spring Boot 2.3, Java 8, and Ehcache 3.8.1. The legacy
+`EhCache3Cache(UserManagedCache<String, Object>)` constructor uses the explicit
+alias `default`; use the alias constructor to choose another name. Ehcache 3
+does not expose a cache's manager alias or a named manager lookup.
+`EhCache3CacheManager` supplies aliases from the manager's runtime configuration.
+
+`getNativeCache(): Ehcache` retains its public return type. It throws an
+`IllegalStateException` if a supplied cache is another Ehcache 3 implementation.
+The adapter can cache null only when the native cache's value type accepts its
+serializable null marker (for example, `Object`); narrower value types reject
+null explicitly. Keys are passed to Ehcache without conversion.
+
+`EhCache3ManagerFactoryBean` keeps its own ClassLoader-local registry for
+`shared` and `acceptExisting`. It cannot discover managers created outside
+this library. Shared factories borrow the first owner's manager; that owner
+controls shutdown. The `name` overloads on `EhCache3ManagerUtils` retain their
+signatures, but Ehcache 3 managers have no name field; use the factory bean for
+name-based reuse.
+
+The current `src/test/resources/ehcache.xml` is a JSR-107 cache template, not
+a configured native cache alias. This starter's configuration class is not
+registered automatically by this branch; import it explicitly when needed.
 
 **ehcache3-spring-boot-starter** is a Spring Boot starter that integrates **ehcache3** for applications using ehcache3. It provides auto-configuration, property binding, and ready-to-use beans so that applications can consume ehcache3 capabilities with minimal setup.
 
@@ -36,9 +61,9 @@
 | Type | Spring Boot Starter |
 | Consumers | Spring Boot applications using ehcache3 |
 | Core Capabilities | auto-configuration, property binding, ready-to-use beans for ehcache3 |
-| JDK | `17` |
-| Coordinates | `io.github.easy4j:ehcache3-spring-boot-starter:1.0.0-SNAPSHOT` |
-| Config Prefix | `ehcache3` |
+| JDK | `8` |
+| Coordinates | `io.github.hiwepy:ehcache3-spring-boot-starter:1.0.0-SNAPSHOT` |
+| Config Prefix | `spring.cache` |
 
 ## 2. Core Capabilities
 
@@ -52,7 +77,7 @@
 
 | Dependency | Minimum | Evidence |
 |---|---:|---|
-| JDK | `17` | `pom.xml` |
+| JDK | `8` | `pom.xml` |
 | Spring Boot | `2.3.0.RELEASE` | `pom.xml` parent |
 | Maven | `3.6+` | Maven Enforcer |
 
@@ -73,7 +98,7 @@ Auto-configuration registration:
 
 ```xml
 <dependency>
-    <groupId>io.github.easy4j</groupId>
+    <groupId>io.github.hiwepy</groupId>
     <artifactId>ehcache3-spring-boot-starter</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 </dependency>
