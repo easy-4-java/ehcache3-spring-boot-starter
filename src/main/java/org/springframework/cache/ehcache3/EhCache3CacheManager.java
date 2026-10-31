@@ -5,7 +5,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.ehcache.Status;
-import org.ehcache.UserManagedCache;
+import org.ehcache.config.CacheConfiguration;
 import org.springframework.cache.Cache;
 import org.springframework.cache.transaction.AbstractTransactionSupportingCacheManager;
 import org.springframework.lang.Nullable;
@@ -15,7 +15,7 @@ public class EhCache3CacheManager extends AbstractTransactionSupportingCacheMana
 
 	@Nullable
 	private org.ehcache.CacheManager cacheManager;
-	
+
 	/**
 	 * Create a new EhCacheCacheManager, setting the target EhCache CacheManager
 	 * through the {@link #setCacheManager} bean property.
@@ -52,6 +52,7 @@ public class EhCache3CacheManager extends AbstractTransactionSupportingCacheMana
 		if (getCacheManager() == null) {
 			setCacheManager(EhCache3ManagerUtils.buildCacheManager());
 		}
+		super.afterPropertiesSet();
 	}
 
 	@Override
@@ -64,10 +65,10 @@ public class EhCache3CacheManager extends AbstractTransactionSupportingCacheMana
 			throw new IllegalStateException("An 'alive' EhCache CacheManager is required - current cache is " + status.toString());
 		}
 
-		Set<String> names = getCacheManager().getRuntimeConfiguration().getCacheConfigurations().keySet();
+		Set<String> names = cacheManager.getRuntimeConfiguration().getCacheConfigurations().keySet();
 		Collection<Cache> caches = new LinkedHashSet<>(names.size());
 		for (String name : names) {
-			caches.add(new EhCache3Cache((UserManagedCache<String, Object>) getCacheManager().getCache(name, String.class, Object.class)));
+			caches.add(adapt(cacheManager, name));
 		}
 		return caches;
 	}
@@ -76,15 +77,19 @@ public class EhCache3CacheManager extends AbstractTransactionSupportingCacheMana
 	protected Cache getMissingCache(String name) {
 		org.ehcache.CacheManager cacheManager = getCacheManager();
 		Assert.state(cacheManager != null, "No CacheManager set");
-		
+
 		// Check the EhCache cache again (in case the cache was added at runtime)
-		org.ehcache.Cache<String, Object> ehcache = cacheManager.getCache(name, String.class, Object.class);
-		if (ehcache != null) {
-			return new EhCache3Cache((UserManagedCache<String, Object>) ehcache);
-		}
-		return null;
+		return cacheManager.getRuntimeConfiguration().getCacheConfigurations().containsKey(name)
+				? adapt(cacheManager, name) : null;
 	}
-	
-	 
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private Cache adapt(org.ehcache.CacheManager manager, String name) {
+		CacheConfiguration configuration = manager.getRuntimeConfiguration().getCacheConfigurations().get(name);
+		org.ehcache.Cache nativeCache = manager.getCache(name,
+				configuration.getKeyType(), configuration.getValueType());
+		return new EhCache3Cache(name, nativeCache);
+	}
+
 
 }

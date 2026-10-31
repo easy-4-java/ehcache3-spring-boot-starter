@@ -16,183 +16,73 @@
 package org.springframework.cache.ehcache3;
 
 import javax.cache.CacheException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.ehcache.CacheManager;
-import org.ehcache.config.Configuration;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.cache.ehcache.EhCacheFactoryBean;
-import org.springframework.cache.ehcache.EhCacheManagerUtils;
 import org.springframework.core.io.Resource;
 import org.springframework.lang.Nullable;
 
 /**
- * {@link FactoryBean} that exposes an EhCache {@link org.ehcache.CacheManager}
- * instance (independent or shared), configured from a specified config location.
- *
- * <p>If no config location is specified, a CacheManager will be configured from
- * "ehcache.xml" in the root of the class path (that is, default EhCache initialization
- * - as defined in the EhCache docs - will apply).
- *
- * <p>Setting up a separate EhCacheManagerFactoryBean is also advisable when using
- * EhCacheFactoryBean, as it provides a (by default) independent CacheManager instance
- * and cares for proper shutdown of the CacheManager. EhCacheManagerFactoryBean is
- * also necessary for loading EhCache configuration from a non-default config location.
- *
- * <p>Note: As of Spring 5.0, Spring's EhCache support requires EhCache 2.10 or higher.
- *
- * @author Juergen Hoeller
- * @author Dmitriy Kopylenko
- * @since 1.1.1
- * @see #setConfigLocation
- * @see #setShared
- * @see EhCacheFactoryBean
- * @see org.ehcache.CacheManager
+ * Creates or borrows an Ehcache 3 manager within this library's ClassLoader.
+ * Ehcache 3 itself provides no named/global manager lookup.
  */
-public class EhCache3ManagerFactoryBean implements FactoryBean<CacheManager>, InitializingBean, DisposableBean {
+public class EhCache3ManagerFactoryBean
+        implements FactoryBean<CacheManager>, InitializingBean, DisposableBean {
+    protected final Log logger = LogFactory.getLog(getClass());
+    @Nullable private Resource configLocation;
+    @Nullable private String cacheManagerName;
+    private boolean acceptExisting;
+    private boolean shared;
+    @Nullable private CacheManager cacheManager;
+    private boolean locallyManaged;
 
-	protected final Log logger = LogFactory.getLog(getClass());
+    public void setConfigLocation(Resource configLocation) { this.configLocation = configLocation; }
+    public void setCacheManagerName(String cacheManagerName) { this.cacheManagerName = cacheManagerName; }
+    public void setAcceptExisting(boolean acceptExisting) { this.acceptExisting = acceptExisting; }
+    public void setShared(boolean shared) { this.shared = shared; }
 
-	@Nullable
-	private Resource configLocation;
+    @Override public void afterPropertiesSet() throws CacheException {
+        synchronized (EhCache3ManagerUtils.registryLock()) {
+            String key = cacheManagerName == null ? EhCache3ManagerUtils.DEFAULT_NAME : cacheManagerName;
+            CacheManager existing = shared ? EhCache3ManagerUtils.lookupShared() : null;
+            if (existing == null) existing = EhCache3ManagerUtils.lookup(key);
+            if (existing != null) {
+                if (!shared && !acceptExisting) {
+                    throw new CacheException("Ehcache manager name already registered: " + key);
+                }
+                cacheManager = existing;
+                if (shared) EhCache3ManagerUtils.registerShared(existing);
+                // Ehcache 2 shared factories retained shutdown responsibility even on reuse.
+                locallyManaged = shared;
+                return;
+            }
+            CacheManager created = configLocation == null ? EhCache3ManagerUtils.buildCacheManager(key)
+                    : EhCache3ManagerUtils.buildCacheManager(key, configLocation);
+            if (shared) EhCache3ManagerUtils.registerShared(created);
+            cacheManager = created;
+            locallyManaged = true;
+        }
+    }
 
-	@Nullable
-	private String cacheManagerName;
+    @Override @Nullable public CacheManager getObject() { return cacheManager; }
+    @Override public Class<? extends CacheManager> getObjectType() {
+        return cacheManager != null ? cacheManager.getClass() : CacheManager.class;
+    }
+    @Override public boolean isSingleton() { return true; }
 
-	private boolean acceptExisting = false;
-
-	private boolean shared = false;
-
-	@Nullable
-	private CacheManager cacheManager;
-
-	private boolean locallyManaged = true;
-
-
-	/**
-	 * Set the location of the EhCache config file. A typical value is "/WEB-INF/ehcache.xml".
-	 * <p>Default is "ehcache.xml" in the root of the class path, or if not found,
-	 * "ehcache-failsafe.xml" in the EhCache jar (default EhCache initialization).
-	 * @see org.ehcache.CacheManager#create(java.io.InputStream)
-	 * @see org.ehcache.CacheManager#CacheManager(java.io.InputStream)
-	 */
-	public void setConfigLocation(Resource configLocation) {
-		this.configLocation = configLocation;
-	}
-
-	/**
-	 * Set the name of the EhCache CacheManager (if a specific name is desired).
-	 * @see org.ehcache.config.Configuration#setName(String)
-	 */
-	public void setCacheManagerName(String cacheManagerName) {
-		this.cacheManagerName = cacheManagerName;
-	}
-
-	/**
-	 * Set whether an existing EhCache CacheManager of the same name will be accepted
-	 * for this EhCacheManagerFactoryBean setup. Default is "false".
-	 * <p>Typically used in combination with {@link #setCacheManagerName "cacheManagerName"}
-	 * but will simply work with the default CacheManager name if none specified.
-	 * All references to the same CacheManager name (or the same default) in the
-	 * same ClassLoader space will share the specified CacheManager then.
-	 * @see #setCacheManagerName
-	 * #see #setShared
-	 * @see org.ehcache.CacheManager#getCacheManager(String)
-	 * @see org.ehcache.CacheManager#CacheManager()
-	 */
-	public void setAcceptExisting(boolean acceptExisting) {
-		this.acceptExisting = acceptExisting;
-	}
-
-	/**
-	 * Set whether the EhCache CacheManager should be shared (as a singleton at the
-	 * ClassLoader level) or independent (typically local within the application).
-	 * Default is "false", creating an independent local instance.
-	 * <p><b>NOTE:</b> This feature allows for sharing this EhCacheManagerFactoryBean's
-	 * CacheManager with any code calling <code>CacheManager.create()</code> in the same
-	 * ClassLoader space, with no need to agree on a specific CacheManager name.
-	 * However, it only supports a single EhCacheManagerFactoryBean involved which will
-	 * control the lifecycle of the underlying CacheManager (in particular, its shutdown).
-	 * <p>This flag overrides {@link #setAcceptExisting "acceptExisting"} if both are set,
-	 * since it indicates the 'stronger' mode of sharing.
-	 * @see #setCacheManagerName
-	 * @see #setAcceptExisting
-	 * @see org.ehcache.CacheManager#create()
-	 * @see org.ehcache.CacheManager#CacheManager()
-	 */
-	public void setShared(boolean shared) {
-		this.shared = shared;
-	}
-
-
-	@Override
-	public void afterPropertiesSet() throws CacheException {
-		if (logger.isInfoEnabled()) {
-			logger.info("Initializing EhCache CacheManager" +
-					(this.cacheManagerName != null ? " '" + this.cacheManagerName + "'" : ""));
-		}
-
-		Configuration configuration = (this.configLocation != null ?
-				EhCache3ManagerUtils.parseConfiguration(this.configLocation) : ConfigurationFactory.parseConfiguration());
-		if (this.cacheManagerName != null) {
-			configuration.setName(this.cacheManagerName);
-		}
-
-		if (this.shared) {
-			// Old-school EhCache singleton sharing...
-			// No way to find out whether we actually created a new CacheManager
-			// or just received an existing singleton reference.
-			this.cacheManager = CacheManager.create(configuration);
-		}
-		else if (this.acceptExisting) {
-			// EhCache 2.5+: Reusing an existing CacheManager of the same name.
-			// Basically the same code as in CacheManager.getInstance(String),
-			// just storing whether we're dealing with an existing instance.
-			synchronized (CacheManager.class) {
-				this.cacheManager = CacheManager.getCacheManager(this.cacheManagerName);
-				if (this.cacheManager == null) {
-					this.cacheManager = new CacheManager(configuration);
-				}
-				else {
-					this.locallyManaged = false;
-				}
-			}
-		}
-		else {
-			// Throwing an exception if a CacheManager of the same name exists already...
-			this.cacheManager = new CacheManager(configuration);
-		}
-	}
-
-
-	@Override
-	@Nullable
-	public CacheManager getObject() {
-		return this.cacheManager;
-	}
-
-	@Override
-	public Class<? extends CacheManager> getObjectType() {
-		return (this.cacheManager != null ? this.cacheManager.getClass() : CacheManager.class);
-	}
-
-	@Override
-	public boolean isSingleton() {
-		return true;
-	}
-
-	@Override
-	public void destroy() {
-		if (this.cacheManager != null && this.locallyManaged) {
-			if (logger.isInfoEnabled()) {
-				logger.info("Shutting down EhCache CacheManager" +
-						(this.cacheManagerName != null ? " '" + this.cacheManagerName + "'" : ""));
-			}
-			this.cacheManager.shutdown();
-		}
-	}
-
+    @Override public void destroy() {
+        synchronized (EhCache3ManagerUtils.registryLock()) {
+            if (cacheManager != null && locallyManaged) {
+                try { cacheManager.close(); }
+                finally {
+                    EhCache3ManagerUtils.release(cacheManager);
+                    cacheManager = null;
+                    locallyManaged = false;
+                }
+            }
+        }
+    }
 }

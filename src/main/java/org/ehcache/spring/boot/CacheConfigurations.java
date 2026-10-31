@@ -16,55 +16,19 @@
 
 package org.ehcache.spring.boot;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.springframework.boot.autoconfigure.cache.CacheType;
-import org.springframework.util.Assert;
 
-/**
- * Mappings between {@link CacheType} and {@code @Configuration}.
- *
- * @author Phillip Webb
- * @author Edd煤 Mel茅ndez
- */
+/** The one configuration class supplied by this starter. */
 final class CacheConfigurations {
-
-	private static final Map<CacheType, Class<?>> MAPPINGS;
-
-	static {
-		Map<CacheType, Class<?>> mappings = new HashMap<CacheType, Class<?>>();
-		mappings.put(CacheType.GENERIC, GenericCacheConfiguration.class);
-		mappings.put(CacheType.EHCACHE, EhCacheCacheConfiguration.class);
-		mappings.put(CacheType.HAZELCAST, HazelcastCacheConfiguration.class);
-		mappings.put(CacheType.INFINISPAN, InfinispanCacheConfiguration.class);
-		mappings.put(CacheType.JCACHE, JCacheCacheConfiguration.class);
-		mappings.put(CacheType.COUCHBASE, CouchbaseCacheConfiguration.class);
-		mappings.put(CacheType.REDIS, RedisCacheConfiguration.class);
-		mappings.put(CacheType.CAFFEINE, CaffeineCacheConfiguration.class);
-		mappings.put(CacheType.SIMPLE, SimpleCacheConfiguration.class);
-		mappings.put(CacheType.NONE, NoOpCacheConfiguration.class);
-		MAPPINGS = Collections.unmodifiableMap(mappings);
-	}
-
-	private CacheConfigurations() {
-	}
-
-	public static String getConfigurationClass(CacheType cacheType) {
-		Class<?> configurationClass = MAPPINGS.get(cacheType);
-		Assert.state(configurationClass != null, "Unknown cache type " + cacheType);
-		return configurationClass.getName();
-	}
-
-	public static CacheType getType(String configurationClassName) {
-		for (Map.Entry<CacheType, Class<?>> entry : MAPPINGS.entrySet()) {
-			if (entry.getValue().getName().equals(configurationClassName)) {
-				return entry.getKey();
-			}
-		}
-		throw new IllegalStateException(
-				"Unknown configuration class " + configurationClassName);
-	}
-
+    private CacheConfigurations() { }
+    static CacheType getType(String configurationClassName) {
+        if (EhCache3CacheConfiguration.class.getName().equals(configurationClassName)) {
+            return CacheType.EHCACHE;
+        }
+        throw new IllegalStateException("Unknown configuration class " + configurationClassName);
+    }
+    static String getConfigurationClass(CacheType type) {
+        if (type == CacheType.EHCACHE) return EhCache3CacheConfiguration.class.getName();
+        throw new IllegalStateException("Unknown cache type " + type);
+    }
 }
