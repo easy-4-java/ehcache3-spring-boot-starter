@@ -54,14 +54,14 @@ public class EhCache3ManagerFactoryBean
                     throw new CacheException("Ehcache manager name already registered: " + key);
                 }
                 cacheManager = existing;
-                if (shared) EhCache3ManagerUtils.registerShared(key, existing);
+                if (shared) EhCache3ManagerUtils.registerShared(existing);
                 // Ehcache 2 shared factories retained shutdown responsibility even on reuse.
                 locallyManaged = shared;
                 return;
             }
             CacheManager created = configLocation == null ? EhCache3ManagerUtils.buildCacheManager(key)
                     : EhCache3ManagerUtils.buildCacheManager(key, configLocation);
-            if (shared) EhCache3ManagerUtils.registerShared(key, created);
+            if (shared) EhCache3ManagerUtils.registerShared(created);
             cacheManager = created;
             locallyManaged = true;
         }

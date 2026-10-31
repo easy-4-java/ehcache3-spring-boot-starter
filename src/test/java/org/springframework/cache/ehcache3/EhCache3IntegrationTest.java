@@ -243,7 +243,8 @@ class EhCache3IntegrationTest {
         borrower.afterPropertiesSet();
         try {
             assertSame(manager, second.getObject());
-            assertSame(manager, borrower.getObject());
+            assertNotSame(manager, borrower.getObject());
+            assertEquals(Status.AVAILABLE, borrower.getObject().getStatus());
         } finally {
             borrower.destroy();
             first.destroy();

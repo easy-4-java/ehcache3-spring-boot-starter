@@ -49,10 +49,8 @@ public abstract class EhCache3ManagerUtils {
         }
         return sharedSingleton;
     }
-    static void registerShared(String name, CacheManager manager) {
+    static void registerShared(CacheManager manager) {
         sharedSingleton = manager;
-        // Do not hide a different named manager behind an unrelated shared alias.
-        if (lookup(name) == null) REGISTRY.put(name, manager);
     }
     static void release(CacheManager manager) {
         if (sharedSingleton == manager) sharedSingleton = null;

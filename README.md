@@ -47,7 +47,8 @@ null explicitly. Keys are passed to Ehcache without conversion.
 use one ClassLoader-local registry. They cannot discover managers created
 outside this library. An `acceptExisting` factory borrows a manager without
 closing it; later `shared` factories reuse the first shared singleton even
-when their requested names differ. A `shared` factory retains shutdown
+when their requested names differ, without registering those later names as
+aliases. A `shared` factory retains shutdown
 responsibility even when it reuses one. As in the original contract, only one
 shared factory should control that lifecycle. Ehcache 3 managers have no
 native name field.
