@@ -1,7 +1,9 @@
 package org.springframework.cache.ehcache3;
 
-import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import javax.cache.CacheException;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -10,22 +12,56 @@ import org.ehcache.config.Configuration;
 import org.ehcache.config.builders.CacheManagerBuilder;
 import org.ehcache.xml.XmlConfiguration;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.ClassPathResource;
 import org.xml.sax.InputSource;
 
 /** Builders for Ehcache 3 managers and XML configuration. */
 public abstract class EhCache3ManagerUtils {
+    static final String DEFAULT_NAME = "default";
+    private static final Map<String, CacheManager> REGISTRY = new HashMap<>();
+
     public static CacheManager buildCacheManager() throws CacheException {
-        return CacheManagerBuilder.newCacheManagerBuilder().build(true);
+        return buildCacheManager(DEFAULT_NAME);
     }
     public static CacheManager buildCacheManager(String name) throws CacheException {
-        // Ehcache 3 has no manager name; the name is used by this library's factory registry.
-        return buildCacheManager();
+        return create(name, null);
     }
     public static CacheManager buildCacheManager(Resource configLocation) throws CacheException {
-        return build(parseConfiguration(configLocation));
+        return create(DEFAULT_NAME, configLocation);
     }
     public static CacheManager buildCacheManager(String name, Resource configLocation) throws CacheException {
-        return buildCacheManager(configLocation);
+        return create(name, configLocation);
+    }
+
+    static Object registryLock() { return REGISTRY; }
+    static CacheManager lookup(String name) {
+        CacheManager manager = REGISTRY.get(name);
+        if (manager != null && manager.getStatus() != org.ehcache.Status.AVAILABLE) {
+            REGISTRY.remove(name);
+            return null;
+        }
+        return manager;
+    }
+    static void release(CacheManager manager) {
+        Iterator<Map.Entry<String, CacheManager>> entries = REGISTRY.entrySet().iterator();
+        while (entries.hasNext()) {
+            if (entries.next().getValue() == manager) entries.remove();
+        }
+    }
+    private static CacheManager create(String name, Resource location) {
+        if (name == null || name.isEmpty()) throw new CacheException("Cache manager name must not be empty");
+        synchronized (REGISTRY) {
+            if (lookup(name) != null) throw new CacheException("Ehcache manager name already registered: " + name);
+            Resource resource = location;
+            if (resource == null) {
+                ClassPathResource defaultXml = new ClassPathResource("ehcache.xml");
+                if (defaultXml.exists()) resource = defaultXml;
+            }
+            CacheManager manager = resource == null ? CacheManagerBuilder.newCacheManagerBuilder().build(true)
+                    : build(parseConfiguration(resource));
+            REGISTRY.put(name, manager);
+            return manager;
+        }
     }
     static CacheManager build(Configuration configuration) {
         CacheManager manager = CacheManagerBuilder.newCacheManager(configuration);

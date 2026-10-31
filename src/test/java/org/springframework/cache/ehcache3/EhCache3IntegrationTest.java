@@ -13,6 +13,7 @@ import org.ehcache.config.builders.CacheManagerBuilder;
 import org.ehcache.config.builders.ResourcePoolsBuilder;
 import org.ehcache.config.builders.UserManagedCacheBuilder;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.springframework.cache.Cache;
 import org.springframework.core.io.ByteArrayResource;
 
@@ -122,10 +123,11 @@ class EhCache3IntegrationTest {
 
     @Test void sharedOverridesAcceptExistingAndClosesOnlyOwner() {
         EhCache3ManagerFactoryBean owner = new EhCache3ManagerFactoryBean();
+        owner.setCacheManagerName("shared-name");
         owner.setShared(true);
         EhCache3ManagerFactoryBean borrower = new EhCache3ManagerFactoryBean();
-        borrower.setShared(true);
-        borrower.setAcceptExisting(false);
+        borrower.setCacheManagerName("shared-name");
+        borrower.setAcceptExisting(true);
         owner.afterPropertiesSet();
         borrower.afterPropertiesSet();
         CacheManager manager = owner.getObject();
@@ -136,15 +138,111 @@ class EhCache3IntegrationTest {
         assertEquals(Status.UNINITIALIZED, manager.getStatus());
     }
 
+    @Test void defaultBuilderReadsClasspathXml() {
+        CacheManager manager = EhCache3ManagerUtils.buildCacheManager();
+        try {
+            assertNotNull(manager.getCache("classpath-default", String.class, String.class));
+        } finally { manager.close(); }
+    }
+
+    @Test void namedBuilderAndFactoryShareRegistry() {
+        CacheManager manager = EhCache3ManagerUtils.buildCacheManager("named-utils");
+        EhCache3ManagerFactoryBean borrower = new EhCache3ManagerFactoryBean();
+        borrower.setCacheManagerName("named-utils");
+        borrower.setAcceptExisting(true);
+        borrower.afterPropertiesSet();
+        try {
+            assertSame(manager, borrower.getObject());
+            assertThrows(javax.cache.CacheException.class,
+                    () -> EhCache3ManagerUtils.buildCacheManager("named-utils"));
+        } finally {
+            borrower.destroy();
+            manager.close();
+        }
+    }
+
+    @Test void namedResourceBuilderAndFactoryShareRegistry() {
+        ByteArrayResource xml = new ByteArrayResource(XML.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        CacheManager manager = EhCache3ManagerUtils.buildCacheManager("named-resource", xml);
+        EhCache3ManagerFactoryBean borrower = new EhCache3ManagerFactoryBean();
+        borrower.setCacheManagerName("named-resource");
+        borrower.setAcceptExisting(true);
+        borrower.afterPropertiesSet();
+        try {
+            assertSame(manager, borrower.getObject());
+            assertNotNull(manager.getCache("numbers", Integer.class, String.class));
+        } finally {
+            borrower.destroy();
+            manager.close();
+        }
+    }
+
+    @Test void closedManagerIsNotBorrowedAgain() {
+        CacheManager closed = EhCache3ManagerUtils.buildCacheManager("closed-name");
+        closed.close();
+        EhCache3ManagerFactoryBean replacement = new EhCache3ManagerFactoryBean();
+        replacement.setCacheManagerName("closed-name");
+        replacement.setAcceptExisting(true);
+        replacement.afterPropertiesSet();
+        try {
+            assertNotSame(closed, replacement.getObject());
+            assertEquals(Status.AVAILABLE, replacement.getObject().getStatus());
+            assertEquals(replacement.getObject().getClass(), replacement.getObjectType());
+        } finally { replacement.destroy(); }
+    }
+
+    @Test void persistentUserManagedCacheHasExplicitNativeTypeBoundary(@TempDir java.nio.file.Path directory)
+            throws org.ehcache.CachePersistenceException {
+        org.ehcache.impl.persistence.DefaultLocalPersistenceService service =
+                new org.ehcache.impl.persistence.DefaultLocalPersistenceService(
+                        new org.ehcache.impl.config.persistence.DefaultPersistenceConfiguration(directory.toFile()));
+        org.ehcache.PersistentUserManagedCache<String, String> persistent =
+                UserManagedCacheBuilder.newUserManagedCacheBuilder(String.class, String.class)
+                        .with(new org.ehcache.impl.config.persistence.UserManagedPersistenceContext<>(
+                                "persistent", service))
+                        .withResourcePools(ResourcePoolsBuilder.newResourcePoolsBuilder()
+                                .heap(10, org.ehcache.config.units.EntryUnit.ENTRIES)
+                                .disk(10, org.ehcache.config.units.MemoryUnit.MB, true))
+                        .build(true);
+        try {
+            EhCache3Cache adapter = new EhCache3Cache("persistent", persistent);
+            adapter.put("key", "value");
+            assertEquals("value", adapter.get("key", String.class));
+            assertThrows(IllegalStateException.class, adapter::getNativeCache);
+        } finally {
+            persistent.close();
+            persistent.destroy();
+            service.stop();
+        }
+    }
+
+    @Test void sharedFactoryReusesNamedBuilderAndStillShutsItDown() {
+        CacheManager manager = EhCache3ManagerUtils.buildCacheManager("shared-utils");
+        EhCache3ManagerFactoryBean shared = new EhCache3ManagerFactoryBean();
+        shared.setCacheManagerName("shared-utils");
+        shared.setShared(true);
+        shared.afterPropertiesSet();
+        assertSame(manager, shared.getObject());
+        shared.destroy();
+        assertEquals(Status.UNINITIALIZED, manager.getStatus());
+    }
+
     @Test void xmlSupportsStreamsAndRejectsBadInput() {
         ByteArrayResource xml = new ByteArrayResource(XML.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         CacheManager manager = EhCache3ManagerUtils.buildCacheManager(xml);
         try {
             assertNotNull(manager.getCache("numbers", Integer.class, String.class));
         } finally { manager.close(); }
-        assertThrows(javax.cache.CacheException.class, () -> EhCache3ManagerUtils.parseConfiguration(
-                new ByteArrayResource("<!DOCTYPE config [<!ENTITY x SYSTEM 'file:///etc/passwd'>]><config>&x;</config>"
+        javax.cache.CacheException doctype = assertThrows(javax.cache.CacheException.class,
+                () -> EhCache3ManagerUtils.parseConfiguration(new ByteArrayResource(
+                        ("<!DOCTYPE config [<!ENTITY key 'java.lang.String'>]>"
+                        + "<config xmlns='http://www.ehcache.org/v3'><cache alias='x'>"
+                        + "<key-type>&key;</key-type><value-type>java.lang.String</value-type>"
+                        + "<heap unit='entries'>10</heap></cache></config>")
                         .getBytes(java.nio.charset.StandardCharsets.UTF_8))));
+        Throwable cause = doctype;
+        while (cause.getCause() != null) cause = cause.getCause();
+        assertTrue(cause.getMessage().contains("DOCTYPE"));
         assertThrows(javax.cache.CacheException.class, () -> EhCache3ManagerUtils.parseConfiguration(
                 new ByteArrayResource("<config".getBytes(java.nio.charset.StandardCharsets.UTF_8))));
     }
@@ -164,7 +262,7 @@ class EhCache3IntegrationTest {
         javax.cache.CacheManager manager = javax.cache.Caching.getCachingProvider().getCacheManager();
         try {
             new CachingSetup().customize(manager);
-            new CachingSetup().customize(manager);
+            assertThrows(javax.cache.CacheException.class, () -> new CachingSetup().customize(manager));
             javax.cache.Cache<Object, Object> cache = manager.getCache("people");
             assertNotNull(cache);
             javax.cache.configuration.CompleteConfiguration<?, ?> configuration =

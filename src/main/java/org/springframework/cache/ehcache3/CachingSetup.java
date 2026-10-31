@@ -14,7 +14,6 @@ public class CachingSetup implements JCacheManagerCustomizer {
 
 	@Override
 	public void customize(CacheManager cacheManager) {
-		if (cacheManager.getCache("people") != null) return;
 		cacheManager.createCache("people",
 				new MutableConfiguration<>()
 						.setExpiryPolicyFactory(TouchedExpiryPolicy.factoryOf(new javax.cache.expiry.Duration(TimeUnit.SECONDS, 10)))

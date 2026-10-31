@@ -43,16 +43,17 @@ The adapter can cache null only when the native cache's value type accepts its
 serializable null marker (for example, `Object`); narrower value types reject
 null explicitly. Keys are passed to Ehcache without conversion.
 
-`EhCache3ManagerFactoryBean` keeps its own ClassLoader-local registry for
-`shared` and `acceptExisting`. It cannot discover managers created outside
-this library. Shared factories borrow the first owner's manager; that owner
-controls shutdown. The `name` overloads on `EhCache3ManagerUtils` retain their
-signatures, but Ehcache 3 managers have no name field; use the factory bean for
-name-based reuse.
+`EhCache3ManagerFactoryBean` and the named `EhCache3ManagerUtils` overloads
+use one ClassLoader-local registry. They cannot discover managers created
+outside this library. An `acceptExisting` factory borrows a manager without
+closing it; a `shared` factory retains shutdown responsibility even when it
+reuses one. As in the original contract, only one shared factory should
+control that lifecycle. Ehcache 3 managers have no native name field.
 
-The current `src/test/resources/ehcache.xml` is a JSR-107 cache template, not
-a configured native cache alias. This starter's configuration class is not
-registered automatically by this branch; import it explicitly when needed.
+The native default-XML test uses `src/test/resources/ehcache.xml`; the original
+JSR-107 template is preserved as `ehcache-jsr107.xml`. This starter's
+configuration class is not registered automatically by this branch; import it
+explicitly when needed.
 
 **ehcache3-spring-boot-starter** is a Spring Boot starter that integrates **ehcache3** for applications using ehcache3. It provides auto-configuration, property binding, and ready-to-use beans so that applications can consume ehcache3 capabilities with minimal setup.
 
