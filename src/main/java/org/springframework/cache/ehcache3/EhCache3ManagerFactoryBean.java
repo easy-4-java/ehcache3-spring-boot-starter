@@ -47,18 +47,21 @@ public class EhCache3ManagerFactoryBean
     @Override public void afterPropertiesSet() throws CacheException {
         synchronized (EhCache3ManagerUtils.registryLock()) {
             String key = cacheManagerName == null ? EhCache3ManagerUtils.DEFAULT_NAME : cacheManagerName;
-            CacheManager existing = EhCache3ManagerUtils.lookup(key);
+            CacheManager existing = shared ? EhCache3ManagerUtils.lookupShared() : null;
+            if (existing == null) existing = EhCache3ManagerUtils.lookup(key);
             if (existing != null) {
                 if (!shared && !acceptExisting) {
                     throw new CacheException("Ehcache manager name already registered: " + key);
                 }
                 cacheManager = existing;
+                if (shared) EhCache3ManagerUtils.registerShared(key, existing);
                 // Ehcache 2 shared factories retained shutdown responsibility even on reuse.
                 locallyManaged = shared;
                 return;
             }
             CacheManager created = configLocation == null ? EhCache3ManagerUtils.buildCacheManager(key)
                     : EhCache3ManagerUtils.buildCacheManager(key, configLocation);
+            if (shared) EhCache3ManagerUtils.registerShared(key, created);
             cacheManager = created;
             locallyManaged = true;
         }

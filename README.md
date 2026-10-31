@@ -46,9 +46,11 @@ null explicitly. Keys are passed to Ehcache without conversion.
 `EhCache3ManagerFactoryBean` and the named `EhCache3ManagerUtils` overloads
 use one ClassLoader-local registry. They cannot discover managers created
 outside this library. An `acceptExisting` factory borrows a manager without
-closing it; a `shared` factory retains shutdown responsibility even when it
-reuses one. As in the original contract, only one shared factory should
-control that lifecycle. Ehcache 3 managers have no native name field.
+closing it; later `shared` factories reuse the first shared singleton even
+when their requested names differ. A `shared` factory retains shutdown
+responsibility even when it reuses one. As in the original contract, only one
+shared factory should control that lifecycle. Ehcache 3 managers have no
+native name field.
 
 The native default-XML test uses `src/test/resources/ehcache.xml`; the original
 JSR-107 template is preserved as `ehcache-jsr107.xml`. This starter's

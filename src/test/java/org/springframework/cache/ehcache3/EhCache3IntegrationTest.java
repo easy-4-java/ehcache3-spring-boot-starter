@@ -227,6 +227,48 @@ class EhCache3IntegrationTest {
         assertEquals(Status.UNINITIALIZED, manager.getStatus());
     }
 
+    @Test void sharedFactoriesWithDifferentNamesUseOneSingleton() {
+        EhCache3ManagerFactoryBean first = new EhCache3ManagerFactoryBean();
+        first.setCacheManagerName("shared-first");
+        first.setShared(true);
+        EhCache3ManagerFactoryBean second = new EhCache3ManagerFactoryBean();
+        second.setCacheManagerName("shared-second");
+        second.setShared(true);
+        first.afterPropertiesSet();
+        second.afterPropertiesSet();
+        CacheManager manager = first.getObject();
+        EhCache3ManagerFactoryBean borrower = new EhCache3ManagerFactoryBean();
+        borrower.setCacheManagerName("shared-second");
+        borrower.setAcceptExisting(true);
+        borrower.afterPropertiesSet();
+        try {
+            assertSame(manager, second.getObject());
+            assertSame(manager, borrower.getObject());
+        } finally {
+            borrower.destroy();
+            first.destroy();
+            if (second.getObject() != manager) second.destroy();
+        }
+        assertEquals(Status.UNINITIALIZED, manager.getStatus());
+    }
+
+    @Test void externallyClosedSharedSingletonIsReplaced() {
+        EhCache3ManagerFactoryBean first = new EhCache3ManagerFactoryBean();
+        first.setCacheManagerName("shared-closed-first");
+        first.setShared(true);
+        first.afterPropertiesSet();
+        CacheManager closed = first.getObject();
+        closed.close();
+        EhCache3ManagerFactoryBean second = new EhCache3ManagerFactoryBean();
+        second.setCacheManagerName("shared-closed-second");
+        second.setShared(true);
+        second.afterPropertiesSet();
+        try {
+            assertNotSame(closed, second.getObject());
+            assertEquals(Status.AVAILABLE, second.getObject().getStatus());
+        } finally { second.destroy(); }
+    }
+
     @Test void xmlSupportsStreamsAndRejectsBadInput() {
         ByteArrayResource xml = new ByteArrayResource(XML.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         CacheManager manager = EhCache3ManagerUtils.buildCacheManager(xml);

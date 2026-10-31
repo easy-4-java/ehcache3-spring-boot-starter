@@ -19,6 +19,7 @@ import org.xml.sax.InputSource;
 public abstract class EhCache3ManagerUtils {
     static final String DEFAULT_NAME = "default";
     private static final Map<String, CacheManager> REGISTRY = new HashMap<>();
+    private static CacheManager sharedSingleton;
 
     public static CacheManager buildCacheManager() throws CacheException {
         return buildCacheManager(DEFAULT_NAME);
@@ -37,12 +38,24 @@ public abstract class EhCache3ManagerUtils {
     static CacheManager lookup(String name) {
         CacheManager manager = REGISTRY.get(name);
         if (manager != null && manager.getStatus() != org.ehcache.Status.AVAILABLE) {
-            REGISTRY.remove(name);
+            release(manager);
             return null;
         }
         return manager;
     }
+    static CacheManager lookupShared() {
+        if (sharedSingleton != null && sharedSingleton.getStatus() != org.ehcache.Status.AVAILABLE) {
+            release(sharedSingleton);
+        }
+        return sharedSingleton;
+    }
+    static void registerShared(String name, CacheManager manager) {
+        sharedSingleton = manager;
+        // Do not hide a different named manager behind an unrelated shared alias.
+        if (lookup(name) == null) REGISTRY.put(name, manager);
+    }
     static void release(CacheManager manager) {
+        if (sharedSingleton == manager) sharedSingleton = null;
         Iterator<Map.Entry<String, CacheManager>> entries = REGISTRY.entrySet().iterator();
         while (entries.hasNext()) {
             if (entries.next().getValue() == manager) entries.remove();
